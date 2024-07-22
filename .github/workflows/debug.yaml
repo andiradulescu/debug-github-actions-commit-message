@@ -14,3 +14,19 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
+
+      - name: Get commit message
+        run: |
+          {
+            echo 'LAST_COMMIT_MESSAGE<<EOF'
+            if [ "${{ github.event_name }}" == "push" ]; then
+              echo "${{ github.event.head_commit.message }}"
+            elif [ "${{ github.event_name }}" == "workflow_run" ]; then
+              echo "${{ github.event.workflow_run.head_commit.message }}"
+            elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+              echo "$(curl -s "${{ github.event.repository.commits_url/\{\/sha\}/${{ github.sha }}" | jq -r '.commit.message')"
+            elif [ "${{ github.event_name }}" == "pull_request" ]; then
+              echo "$(curl -s "${{ github.event.repository.commits_url/\{\/sha\}/${{ github.event.pull_request.head.sha }}" | jq -r '.commit.message')"
+            fi
+            echo EOF
+          } | tee -a $GITHUB_ENV
