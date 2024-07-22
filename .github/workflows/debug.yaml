@@ -24,9 +24,9 @@ jobs:
             elif [ "${{ github.event_name }}" == "workflow_run" ]; then
               echo "${{ github.event.workflow_run.head_commit.message }}"
             elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-              echo "$(curl -s "${{ github.event.repository.commits_url/\{\/sha\}/${{ github.sha }}" | jq -r '.commit.message')"
+              echo "$(curl -s "${{ github.event.repository.commits_url.replace('{/sha}', github.sha) }}" | jq -r '.commit.message')"
             elif [ "${{ github.event_name }}" == "pull_request" ]; then
-              echo "$(curl -s "${{ github.event.repository.commits_url/\{\/sha\}/${{ github.event.pull_request.head.sha }}" | jq -r '.commit.message')"
+              echo "$(curl -s "${{ github.event.repository.commits_url.replace('{/sha}', github.event.pull_request.head.sha) }}" | jq -r '.commit.message')"
             fi
             echo EOF
           } | tee -a $GITHUB_ENV
