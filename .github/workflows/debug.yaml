@@ -14,23 +14,21 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
-      - name: Dump job context
-        env:
-          JOB_CONTEXT: ${{ toJson(job) }}
-        run: echo "$JOB_CONTEXT"
-      - name: Dump steps context
-        env:
-          STEPS_CONTEXT: ${{ toJson(steps) }}
-        run: echo "$STEPS_CONTEXT"
-      - name: Dump runner context
-        env:
-          RUNNER_CONTEXT: ${{ toJson(runner) }}
-        run: echo "$RUNNER_CONTEXT"
-      - name: Dump strategy context
-        env:
-          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
-        run: echo "$STRATEGY_CONTEXT"
-      - name: Dump matrix context
-        env:
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
-        run: echo "$MATRIX_CONTEXT"
+
+      - name: Get commit message
+        run: |
+          {
+            echo 'LAST_COMMIT_MESSAGE<<EOF'
+            if [ "${{ github.event_name }}" == "push" ]; then
+              echo "${{ github.event.head_commit.message }}"
+            elif [ "${{ github.event_name }}" == "workflow_run" ]; then
+              echo "${{ github.event.workflow_run.head_commit.message }}"
+            elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+              COMMIT_URL=$(echo "${{ github.event.repository.commits_url }}" | sed "s|{/sha}|/${{ github.sha }}|")
+              echo "$(curl -s "$COMMIT_URL" | jq -r '.commit.message')"
+            elif [ "${{ github.event_name }}" == "pull_request" ]; then
+              PR_COMMIT_URL=$(echo "${{ github.event.repository.commits_url }}" | sed "s|{/sha}|/${{ github.event.pull_request.head.sha }}|")
+              echo "$(curl -s "$PR_COMMIT_URL" | jq -r '.commit.message')"
+            fi
+            echo EOF
+          } | tee -a $GITHUB_ENV
