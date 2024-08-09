@@ -1,0 +1,39 @@
+name: build
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build kernel and system
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        submodules: true
+
+    - name: Build fake system
+      run: |
+        mkdir -p output/ota/
+        dd if=/dev/urandom of=output/ota/boot-test.img.xz bs=1M count=15
+        dd if=/dev/urandom of=output/ota/system-test.img.xz bs=1M count=800
+        dd if=/dev/urandom of=output/ota/system-skip-chunks-test.img.xz bs=1M count=800
+        echo {} > output/ota/ota.json
+        echo {} > output/ota/ota-staging.json
+
+    - name: Save PR number
+      run: |
+        echo ${{ github.event.number }} | tee output/ota/PR
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: agnos-artifacts
+        path: output/ota
+        compression-level: 0
